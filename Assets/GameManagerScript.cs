@@ -1,72 +1,145 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;
+using UnityEditor.Timeline;
 using UnityEngine;
 
 public class GameManagerScript : MonoBehaviour
 {
-    //コンソールに描画
-    void PrintArray()
-    {
-        string debugText = "";
-        for(int i=0;i<map.Length;i++)
-        {
-            debugText += map[i].ToString() + ",";
-        }
-        Debug.Log(debugText);
-    }
-
     //プレイヤーの位置を取得
-    int GetPlayerIndex()
+    Vector2Int GetPlayerIndex()
     {
-        for(int i=0;i<map.Length;i++)
+        for (int y = 0; y < field.GetLength(0); y++)
         {
-            if (map[i] == 1)
+            for (int x = 0; x < field.GetLength(1); x++)
             {
-                return i;
+                if (field[y, x] == null)
+                {
+                    continue;
+                }
+                if (field[y,x].tag=="Player")
+                {
+                    return new Vector2Int(x, y);
+                }
             }
         }
-        return -1;
+        return new Vector2Int(-1, -1);
     }
-
     //数字の移動
-    bool MoveNumber(int number,int moveFrom,int moveTo)
+    bool MoveNumber(string tag,Vector2Int moveFrom,Vector2Int moveTo)
     {
         //移動先が範囲外なら移動不可
-        if(moveTo<0||moveTo>=map.Length)
+        if(moveTo.y<0||moveTo.y>=field.GetLength(0))
         {
             return false;
         }
-        //移動先に2(箱)が居たら
-        if (map[moveTo]==2)
+        if (moveTo.x < 0||moveTo.x>=field.GetLength(1))
         {
-            //どの方向へ移動するか算出
-            int velocity = moveTo - moveFrom;
-            //プレイヤーの移動先から、さらに先へ2(箱)を移動させる
-            //箱の移動処理。MoveNumberメソッド内でMoveNumberメソッドを
-            //呼び、処理が再帰している。移動可不可をboolで記録
-            bool succes = MoveNumber(2, moveTo, moveTo + velocity);
-            //もし箱が移動失敗したら、プレイヤーの移動も失敗
-            if(!succes)
+            return false;
+        }
+
+        //移動先に2(箱)が居たら
+        if (field[moveTo.y, moveTo.x] != null && field[moveTo.y,moveTo.x].tag=="Box")
+        {
+            Vector2Int velocity = moveTo - moveFrom;
+            bool success = MoveNumber(tag, moveTo, moveTo + velocity);
+            if(!success)
             {
                 return false;
             }
         }
 
-        map[moveTo] = number;
-        map[moveFrom] = 0;
+        field[moveFrom.y, moveFrom.x].transform.position = new Vector3(moveTo.x, field.GetLength(0) - moveTo.y, 0);
+        field[moveTo.y, moveTo.x] = field[moveFrom.y, moveFrom.x];
+        field[moveFrom.y, moveFrom.x] = null;
+        return true;
+       
+    }
+
+    //クリア表示
+   bool IsCleard()
+    {
+        List<Vector2Int> goals = new List<Vector2Int>();
+        for (int y = 0; y < map.GetLength(0); y++) 
+        {
+            for (int x = 0; x < map.GetLength(1); x++)
+            {
+                if (map[y,x]==3)
+                {
+                    goals.Add(new Vector2Int(x, y));
+                }
+            }
+        }
+
+        for(int i=0;i<goals.Count;i++)
+        {
+            GameObject f = field[goals[i].y, goals[i].x];
+            if(f==null||f.tag!="Box")
+            {
+                return false;
+            }
+        }
         return true;
     }
 
+    public GameObject playerPrehub;
+    public GameObject BoxPrehub;
+    public GameObject goalPrehub;
+
+    public GameObject ClearText;
+
     //配列の宣言
-    int[] map;
+    int[,] map;
+    GameObject[,] field;
 
     // Start is called before the first frame update
     void Start()
     {
+      
+
         //配列の実態の作成と初期化
-        map = new int[] { 0, 0, 0, 1, 0, 2, 0, 0, 0 };
-        PrintArray();
+        map = new int[,]
+        {
+            {0,0,0,0,0 },
+            {0,0,1,0,0,},
+            {0,3,2,3,0 },
+            {0,2,3,2,0 },
+            {0,0,0,0,0 }
+        };
+
+        field = new GameObject
+        [
+            map.GetLength(0),
+            map.GetLength(1)
+        ];
+        
+
+        for (int y = 0; y < map.GetLength(0); y++) 
+        {
+            for (int x = 0; x < map.GetLength(1); x++) 
+            {
+                if (map[y, x] == 1)
+                {
+                    field[y, x] = Instantiate
+                       (
+                            playerPrehub,
+                            new Vector3(x, map.GetLength(0) - y, 0),
+                            Quaternion.identity
+                       );
+                }
+
+                if (map[y, x] == 2)
+                {
+                    field[y, x] = Instantiate
+                     (
+                          BoxPrehub,
+                          new Vector3(x, map.GetLength(0) - y, 0),
+                          Quaternion.identity
+                     );
+                }
+                
+            }
+        }
     }
 
     // Update is called once per frame
@@ -76,19 +149,61 @@ public class GameManagerScript : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.RightArrow))
         {
             //位置取得
-            int playerIndex = GetPlayerIndex();
+            Vector2Int playerIndex = GetPlayerIndex();
             //数字の移動
-            MoveNumber(1, playerIndex, playerIndex + 1);
-            //文字の描画
-            PrintArray();
+            MoveNumber("player", playerIndex, playerIndex + new Vector2Int(1, 0));
+            //もしクリアしていたら
+            if (IsCleard())
+            {
+                Debug.Log("Clear!!");
+                ClearText.SetActive(true);
+            }
         }
 
         //1の左移動(プレイヤー)
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
-            int playerIndex = GetPlayerIndex();
-            MoveNumber(1, playerIndex, playerIndex - 1);
-            PrintArray();
+            Vector2Int playerIndex = GetPlayerIndex();
+            MoveNumber("player", playerIndex, playerIndex + new Vector2Int(-1, 0));
+            //もしクリアしていたら
+            if (IsCleard())
+            {
+                Debug.Log("Clear!!");
+                ClearText.SetActive(true);
+            }
         }
+
+        //上の移動(プレイヤー)
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            //位置取得
+            Vector2Int playerIndex = GetPlayerIndex();
+            //数字の移動
+            MoveNumber("player", playerIndex, playerIndex + new Vector2Int(0,-1));
+            //もしクリアしていたら
+            if (IsCleard())
+            {
+                Debug.Log("Clear!!");
+                ClearText.SetActive(true);
+            }
+        }
+
+        //下の移動(プレイヤー)
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            //位置取得
+            Vector2Int playerIndex = GetPlayerIndex();
+            //数字の移動
+            MoveNumber("player", playerIndex, playerIndex + new Vector2Int(0, 1));
+            //もしクリアしていたら
+            if (IsCleard())
+            {
+                Debug.Log("Clear!!");
+                ClearText.SetActive(true);
+            }
+        }
+
+       
+
     }
 }

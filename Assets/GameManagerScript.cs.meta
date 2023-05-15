@@ -3,7 +3,12 @@ guid: 621862908e064364db237a31250a10de
 MonoImporter:
   externalObjects: {}
   serializedVersion: 2
-  defaultReferences: []
+  defaultReferences:
+  - playerPrehub: {fileID: 4745653615644303328, guid: 756469e3a36f3d0498771cf524ed171c, type: 3}
+  - BoxPrehub: {fileID: 4762534120579394081, guid: 6b08ef24db2b16242a8772130eb95aa1, type: 3}
+  - goalPrehub: {instanceID: 0}
+  - storagePrehub: {fileID: 8248385127079783431, guid: 2c7d813c15fa4bb498223b41badb039f, type: 3}
+  - ClearText: {instanceID: 0}
   executionOrder: 0
   icon: {instanceID: 0}
   userData: 

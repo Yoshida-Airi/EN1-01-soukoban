@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;
-using UnityEditor.Timeline;
 using UnityEngine;
 
 public class GameManagerScript : MonoBehaviour
@@ -85,6 +84,7 @@ public class GameManagerScript : MonoBehaviour
     public GameObject playerPrehub;
     public GameObject BoxPrehub;
     public GameObject goalPrehub;
+    public GameObject storagePrehub;
 
     public GameObject ClearText;
 
@@ -92,17 +92,20 @@ public class GameManagerScript : MonoBehaviour
     int[,] map;
     GameObject[,] field;
 
+
     // Start is called before the first frame update
     void Start()
     {
-      
+       
+        //ウィンドウサイズ
+        Screen.SetResolution(1920, 1080, false);
 
         //配列の実態の作成と初期化
         map = new int[,]
         {
             {0,0,0,0,0 },
-            {0,0,1,0,0,},
-            {0,3,2,3,0 },
+            {0,3,1,3,0,},
+            {0,0,2,0,0 },
             {0,2,3,2,0 },
             {0,0,0,0,0 }
         };
@@ -118,6 +121,7 @@ public class GameManagerScript : MonoBehaviour
         {
             for (int x = 0; x < map.GetLength(1); x++) 
             {
+                //プレイヤー
                 if (map[y, x] == 1)
                 {
                     field[y, x] = Instantiate
@@ -128,6 +132,7 @@ public class GameManagerScript : MonoBehaviour
                        );
                 }
 
+                //ボックス
                 if (map[y, x] == 2)
                 {
                     field[y, x] = Instantiate
@@ -137,9 +142,26 @@ public class GameManagerScript : MonoBehaviour
                           Quaternion.identity
                      );
                 }
-                
+
+                //格納場所
+                if (map[y, x] == 3)
+                {
+                   Instantiate
+                    (
+                           storagePrehub,
+                          new Vector3(x, map.GetLength(0) - y, 0.01f),
+                          Quaternion.identity
+                    );
+                  
+                   
+                }
+
+
             }
         }
+
+     
+
     }
 
     // Update is called once per frame
